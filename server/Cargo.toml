@@ -8,3 +8,8 @@ edition = "2018"
 
 [dependencies]
 rocket = "0.4.2"
+ndarray-linalg = "0.12"
+ndarray = { version = "0.13.0", features = ["blas"] }
+blas-src = { version = "0.2.0", default-features = false, features = ["openblas"] }
+openblas-src = { version = "0.6.0", default-features = false, features = ["cblas", "system"] }
+num = "0.2.1"

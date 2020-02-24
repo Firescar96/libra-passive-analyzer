@@ -1,32 +1,5 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
-use std::path::PathBuf;
-use std::path::Path;
-use std::fs::File;
-use std::io::prelude::*;
-
-use rocket::response::content::Html;
-use rocket::response::NamedFile;
-#[macro_use] extern crate rocket;
-
-#[get("/<path..>")]
-fn index_path(path: PathBuf) -> Html<String> {
-    let mut file = File::open("../client/dist/index.html").unwrap();
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).unwrap();
-    Html(contents)
-}
-
-#[get("/static/<file..>")]
-fn files(file: PathBuf) -> Option<NamedFile> {
-    NamedFile::open(Path::new("../client/dist/static/").join(file)).ok()
-}
-
-#[get("/")]
-fn index() -> Html<String> {
-    return index_path(PathBuf::new())
-}
-
 fn main() {
-    rocket::ignite().mount("/", routes![index, files]).launch();
+    // rocket::ignite().mount("/", routes![index, files]).launch();
+    
+    return;
 }
