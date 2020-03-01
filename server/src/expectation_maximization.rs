@@ -1,7 +1,7 @@
 use ndarray::prelude::*;
 use ndarray_linalg::norm::*;
-use num::pow::pow;
 use std::f64::consts::PI;
+use std::f64::consts::E;
 
 // def log_N(x,mu,var):
 // (d,) = np.shape(x)
@@ -16,23 +16,27 @@ use std::f64::consts::PI;
 //        Mu: K*d matrix, each row corresponds to a mixture mean;
 //        Var: K*1 matrix, each entry corresponds to the variance for a mixture;
 // output: a Loglikelihood value
-fn log_n(x: &Array2<f64>, mu: &Array2<f64>, var: &Array1<f64>) -> f64 {
+fn log_n(x: &Array2<f64>, mu: &Array2<f64>, var: &Array1<f64>) -> Array1<f64> {
     let shape = x.shape();
     let (_, x_diff_vec) = normalize(x-mu, NormalizeAxis::Column);
     let x_diff = &Array1::from(x_diff_vec);
-    let squared_diff = pow(x_diff.dot(x_diff), 2);
-    let e_exponent = -squared_diff/(var* 2.);
-    println!("{:?}", var.outer_iter().map(|v| v).collect::<f64>());
-    // e_exponent*f64.consts.E.ln() - (shape[0] as f64)/2.*(PI*2.*var).ln();
-    return 5.;
+    let x_norm = x_diff.dot(x_diff);
+    let e_exponent = -x_norm/(var* 2.);
+    println!("{}", e_exponent);
+    let theta = (PI*2.*var).iter().map(|v| v.ln()).collect::<Vec<f64>>();
+    
+    return e_exponent*E.ln() - (shape[0] as f64)/2.*Array1::from(theta);
 }
 
 #[test]
 fn test_log_n() {
     let x = &array![[1.,0.,0.], [0.,1.,0.]];
     let mu = &array![[0.,0.,0.], [1.,0.,0.]];
-    let var = &array![1., 1.];
-    assert_eq!(log_n(x, mu, var), 6.);
+    let var = &array![10., 1.];
+
+    let result = log_n(x, mu, var);
+    assert_eq!(result[0], -4.290462159403392);
+    assert_eq!(result[1], -3.3378770664093453);
 }
 
 // def Estep_part2(X,K,Mu,P,Var):
