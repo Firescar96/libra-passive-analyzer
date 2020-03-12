@@ -2,13 +2,18 @@ import numpy as np
 import numpy.linalg as LA
 
 def log_N(x,mu,var):
-    (d,_) = np.shape(x)
+    (d,) = np.shape(x)
     d = float(d)
     squared_diff = np.power(LA.norm(x-mu),2)
     e_exponent = -squared_diff/(2*var)
     result = e_exponent*np.log(np.e) - d/2*np.log(np.pi*2*var)
     return result
 
+# x = np.array([1.,0.,0.])
+# mu = np.array([0.,0.,0.])
+# var = 10.
+
+# print(log_N(x,mu,var))
 
 def Estep_part2(X,K,Mu,P,Var):
     n,d = np.shape(X) # n data points of dimension d
@@ -23,13 +28,15 @@ def Estep_part2(X,K,Mu,P,Var):
         likelihoods = []
         for j in range(K):
             mu = np.array([Mu[j][e] for e in range(d) if delta[e] == 1])
+            print(mu)
             logScaledWeightedDensity = np.add(np.log(P[j]), log_N(x,mu,Var[j]))
             likelihoods.append(logScaledWeightedDensity)
+            
         x_prime = max(likelihoods)
         shifted_sum = sum(map(lambda x: np.exp(x-x_prime), likelihoods)) #logarithm magic
         likelihoodsum = x_prime + np.log(shifted_sum)#more logarithm magic
-        # print np.log(max())[0]
         LL += likelihoodsum
+        print(LL, likelihoodsum)
 
         for j in range(K):
             mu = np.array([Mu[j][e] for e in range(d) if delta[e] == 1])
@@ -38,6 +45,15 @@ def Estep_part2(X,K,Mu,P,Var):
 
 
     return (np.exp(post),LL)
+
+
+
+x = np.array([[1.,0.,0.], [0.,1.,0.]])
+mu = np.array([[0.,1.,0.], [1.,0.,0.]])
+p = np.array([10., 1.])
+var = np.array([10., 1.])
+
+print(Estep_part2(x, len(mu), mu, p, var))
 
 # M step of EM algorithm
 # input: X: n*d data matrix;
@@ -81,10 +97,3 @@ def Mstep_part2(X,K,Mu,P,Var,post, minVariance=0.25):
         Var[j] = max(newvar/newvartotal, minVariance)
 
     return (Mu,P,Var)
-
-
-x = np.array([[1.,0.,0.], [0.,1.,0.]])
-mu = np.array([[0.,0.,0.], [1.,0.,0.]])
-var = np.array([10., 1.])
-
-print(log_N(x,mu,var))
