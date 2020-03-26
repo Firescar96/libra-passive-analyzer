@@ -2,14 +2,6 @@ use ndarray::prelude::*;
 use std::f64::consts::PI;
 use std::f64::consts::E;
 
-// def log_N(x,mu,var):
-// (d,) = np.shape(x)
-// d = float(d)
-// squared_diff = np.power(LA.norm(x-mu),2)
-// e_exponent = -squared_diff/(2*var)
-// result = e_exponent*np.log(np.e) - d/2*np.log(np.pi*2*var)
-// return result
-
 // E step of EM algorithm with missing data
 // input: X: n*d data matrix;
 //        Mu: K*d matrix, each row corresponds to a mixture mean;
@@ -34,35 +26,6 @@ fn test_log_n() {
     let result = log_n(x, mu, var);
     assert_eq!(result, -6.260693239105087);
 }
-
-// def Estep_part2(X,K,Mu,P,Var):
-//     n,d = np.shape(X) # n data points of dimension d
-//     post = np.zeros((n,K)) # posterior probabilities to compute
-//     LL = 0.0    # the LogLikelihood
-
-//     for (t,x) in enumerate(X):
-//         delta = np.zeros(d)
-//         delta[x != 0] = 1
-//         x = np.array([x[e] for e in range(d) if delta[e] == 1])
-
-//         likelihoods = []
-//         for j in range(K):
-//             mu = np.array([Mu[j][e] for e in range(d) if delta[e] == 1])
-//             log_scaled_weighted_density = np.add(np.log(P[j]), log_N(x,mu,Var[j]))
-//             likelihoods.append(log_scaled_weighted_density)
-//         x_prime = max(likelihoods)
-//         shifted_sum = sum(map(lambda x: np.exp(x-x_prime), likelihoods)) #logarithm magic
-//         likelihoodsum = x_prime + np.log(shifted_sum)#more logarithm magic
-//         # print np.log(max())[0]
-//         LL += likelihoodsum
-
-//         for j in range(K):
-//             mu = np.array([Mu[j][e] for e in range(d) if delta[e] == 1])
-//             log_scaled_weighted_density = np.add(np.log(P[j]), log_N(x,mu,Var[j]))
-//             post[t][j] = log_scaled_weighted_density - likelihoodsum
-
-
-//     return (np.exp(post),LL)
 
 // E step of EM algorithm with missing data
 // input: X: n*d data matrix;
@@ -152,34 +115,63 @@ fn test_e_step() {
 // #        P: updated P, K*1 matrix, each entry corresponds to the weight for a mixture;
 // #        Var: updated Var, K*1 matrix, each entry corresponds to the variance for a mixture;
 // def Mstep_part2(X,K,Mu,P,Var,post, minVariance=0.25):
-//     n,d = np.shape(X) # n data points of dimension d
+pub fn m_step(x: &Array2<f64>, mut mu: Array2<f64>, mut p: Array1<f64>, mut var: Array1<f64>, post: &Array2<f64>) -> (Array2<f64>, Array1<f64>, Array1<f64>) {
+    let x_shape = x.shape();
+    let mu_shape = mu.shape();
+    
+    for j in 0..mu_shape[0] {
+        let nj = post.slice(s![.., j]).sum();
+        p[j] = nj/(x_shape[0] as f64);
 
-//     post = post.transpose()
-//     for j in range(K):
-//         nj = sum(post[j])
-//         P[j] = nj/len(X)
+        let mut newmux = Array1::<f64>::zeros(x_shape[1]);
+        let mut newmutotal = Array1::<f64>::zeros(x_shape[1]);
+        for (x_index,x_item) in x.outer_iter().enumerate() {
+            let delta = x_item.mapv(|e| if e != 0. {1.} else {0.});
+            newmux = newmux+delta.clone()*x_item*post[[x_index, j]];
+            newmutotal = newmutotal+delta.clone()*post[[x_index, j]];
+            // println!("{:?}", newmux);
+        };
+        
+        for (x_index, total) in newmutotal.iter().enumerate() {
+            if total >= &1. {
+                mu[[j, x_index]] = newmux[x_index]/total/total;
+            }
+        }
 
-//         newmux = 0
-//         newmutotal  = 0
-//         for (t,x) in enumerate(X):
-//             delta = np.array([1 if x_prime != 0 else 0 for x_prime in x])
-//             newmux += delta*x*post[j][t]
-//             newmutotal += delta*post[j][t]
-//         for (t, total) in enumerate(newmutotal):
-//             if total >= 1:
-//                 Mu[j][t] = newmux[t]/total
+        let mut newvar = 0.;
+        let mut newvartotal = 0.;
+        for (x_index, x_item) in x.outer_iter().enumerate() {
+            let delta = x_item.mapv(|e| if e != 0. {1.} else {0.});
+            
+            let x_item = x_item.mapv(|a| a)*delta.clone();
+            let existing_mu = delta.clone()*mu.slice(s![j, ..]);
+            let x_diff = &Array1::from(x_item-existing_mu);
+            let x_norm = x_diff.dot(x_diff);
+            newvar += x_norm*post[[x_index, j]];
 
-//         newvar = 0
-//         newvartotal = 0
-//         for (t,x) in enumerate(X):
-//             delta = np.array([1 if x_prime != 0 else 0 for x_prime in x])
-//             x = delta*x
-//             mu = delta*Mu[j]
-//             squared_diff = np.power(LA.norm(x-mu),2)
-//             newvar += squared_diff*post[j][t]
+            let deltasize = delta.iter()
+                .filter(|&&e| e != 0.).count();
+            newvartotal = newvartotal+(deltasize as f64)*post[[x_index, j]];
+        }
+        // var[j] = max(newvar/newvartotal, minVariance)
+        var[j] = newvar/newvartotal;
+    }
 
-//             deltasize = len(filter(lambda x: x != 0, delta))
-//             newvartotal += deltasize*post[j][t]
-//         Var[j] = max(newvar/newvartotal, minVariance)
+    (mu, p, var)
+}
 
-//     return (Mu,P,Var)
+#[test]
+fn test_m_step() {
+    let x = &array![[1.,0.,0.], [0.,1.,0.]];
+    let mu = array![[0.,1.,0.], [1.,0.,0.]];
+    let p = array![10., 1.];
+    let var = array![10., 1.];
+    let post = &array![[0.75050221, 0.24949779], [0.83906567, 0.16093433]];
+
+    let result = m_step(x, mu, p, var, post);
+    assert_eq!(result.0, array![[0., 1., 0.],
+            [1., 0., 0.]]);
+            
+    assert_eq!(result.1, array![0.79478394, 0.20521605999999998]);
+    assert_eq!(result.2, array![0.4721422843546637, 0.3921094918204745]);
+}

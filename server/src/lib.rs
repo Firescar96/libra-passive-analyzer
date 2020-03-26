@@ -11,8 +11,8 @@ use rocket::response::NamedFile;
 
 mod expectation_maximization;
 
-#[get("/<path..>")]
-fn index_path(path: PathBuf) -> Html<String> {
+#[get("/<_path..>")]
+fn index_path(_path: PathBuf) -> Html<String> {
     let mut file = File::open("../client/dist/index.html").unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
