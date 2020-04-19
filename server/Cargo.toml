@@ -7,9 +7,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rocket = "0.4.2"
 ndarray-linalg = "0.12"
 ndarray = { version = "0.13.0", features = ["blas"] }
 blas-src = { version = "0.2.0", default-features = false, features = ["openblas"] }
 openblas-src = { version = "0.6.0", default-features = false, features = ["cblas", "system"] }
 num = "0.2.1"
+cli = { path = "../libra/client/cli" }
+structopt = "0.3.12"
+chrono = "0.4.11"
+hex = "0.4.2"
