@@ -19,7 +19,7 @@
     "connect-gzip-static": "^2.1.1",
     "d3": "^5.9.7",
     "express": "^4.17.1",
-    "marked": "^0.7.0",
+    "marked": "^4.0.10",
     "vue": "^2.6.10",
     "vue-class-component": "^7.1.0",
     "vue-property-decorator": "^8.2.1",
