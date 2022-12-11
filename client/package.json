@@ -18,7 +18,7 @@
     "@babel/runtime": "^7.4.5",
     "connect-gzip-static": "^2.1.1",
     "d3": "^5.9.7",
-    "express": "^4.17.1",
+    "express": "^4.17.3",
     "marked": "^0.7.0",
     "vue": "^2.6.10",
     "vue-class-component": "^7.1.0",
